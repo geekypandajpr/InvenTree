@@ -202,6 +202,8 @@ function DrawerContent({ closeFunc }: Readonly<{ closeFunc?: () => void }>) {
           <></>
         )}
       </Container>
+      
+      {/* TODO @matmair #1: implement plugin loading and menu item generation see #5269 
       <div ref={ref}>
         <Space h='md' />
         <MenuLinks
@@ -216,6 +218,7 @@ function DrawerContent({ closeFunc }: Readonly<{ closeFunc?: () => void }>) {
           beforeClick={closeFunc}
         />
       </div>
+      */}
     </Flex>
   );
 }

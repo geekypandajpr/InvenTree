@@ -52,13 +52,13 @@ export function getActions(navigate: NavigateFunction) {
         },
         leftSection: <IconLink size='1.2rem' />
       },
-      {
-        id: 'about',
-        label: t`About InvenTree`,
-        description: t`About the InvenTree org`,
-        onClick: () => aboutInvenTree(),
-        leftSection: <IconLink size='1.2rem' />
-      },
+      // {
+      //   id: 'about',
+      //   label: t`About InvenTree`,
+      //   description: t`About the InvenTree org`,
+      //   onClick: () => aboutInvenTree(),
+      //   leftSection: <IconLink size='1.2rem' />
+      // },
       {
         id: 'server-info',
         label: t`Server Information`,

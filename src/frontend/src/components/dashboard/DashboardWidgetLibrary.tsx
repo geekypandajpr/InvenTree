@@ -188,22 +188,22 @@ export function BuiltinQueryCountWidgets(): DashboardWidgetProps[] {
 
 export function BuiltinGettingStartedWidgets(): DashboardWidgetProps[] {
   return [
-    {
-      label: 'gstart',
-      title: t`Getting Started`,
-      description: t`Getting started with InvenTree`,
-      minWidth: 5,
-      minHeight: 4,
-      render: () => <GetStartedWidget />
-    },
-    {
-      label: 'news',
-      title: t`News Updates`,
-      description: t`The latest news from InvenTree`,
-      minWidth: 5,
-      minHeight: 4,
-      render: () => <NewsWidget />
-    }
+    // {
+    //   label: 'gstart',
+    //   title: t`Getting Started`,
+    //   description: t`Getting started with InvenTree`,
+    //   minWidth: 5,
+    //   minHeight: 4,
+    //   render: () => <GetStartedWidget />
+    // },
+    // {
+    //   label: 'news',
+    //   title: t`News Updates`,
+    //   description: t`The latest news from InvenTree`,
+    //   minWidth: 5,
+    //   minHeight: 4,
+    //   render: () => <NewsWidget />
+    // }
   ];
 }
 

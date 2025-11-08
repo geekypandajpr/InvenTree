@@ -1,22 +1,14 @@
 # Docker compose recipe for InvenTree development server
-# - Runs PostgreSQL as the database backend
-# - Uses built-in django webserver
-# - Runs the InvenTree background worker process
-# - Serves media and static content directly from Django webserver
-
-# IMPORTANT NOTE:
-# The InvenTree development image does not clone source code from git.
-# Instead, it runs from source code on your local machine.
-# The django server will auto-detect any code changes and reload the server.
-
-# If you have cloned the InvenTree git repo, and not made any changes to this file,
-# then the default setup in this file should work straight out of the box, without modification
+# Uses Dockerfile.dev which has all environment variables built-in
+# No need for external .env files!
+#
+# Usage:
+#   docker compose -f dev-docker-compose.custom.yml up --build
 
 services:
 
     # Database service
     # Use PostgreSQL as the database backend
-    # Note: This can be changed to a different backend if required
     inventree-dev-db:
         image: postgres:17
         expose:
@@ -32,36 +24,34 @@ services:
         restart: unless-stopped
 
     # InvenTree web server service
-    # Runs the django built-in webserver application
+    # Uses Dockerfile.dev which has all env vars built-in
     inventree-dev-server:
         depends_on:
           - inventree-dev-db
-        build: &build_config
-            context: .
-            dockerfile: contrib/container/Dockerfile
+        build:
+            context: ../..
+            dockerfile: contrib/container/Dockerfile.dev
             target: dev
         # Cache the built image to be used by the inventree-dev-worker process
-        image: inventree-dev-image
+        image: inventree-dev-custom-image
         ports:
             # Expose web server on port 8000
             - 8000:8000
         volumes:
             # Mount local source directory to /home/inventree
-            - ./:/home/inventree:z
-        env_file:
-            - docker.dev.env
+            - ../../:/home/inventree:z
+        # No env_file needed - all vars are in Dockerfile.dev!
         restart: unless-stopped
 
     # Background worker process handles long-running or periodic tasks
     inventree-dev-worker:
-        image: inventree-dev-image
-        build: *build_config
+        image: inventree-dev-custom-image
         command: invoke worker
         depends_on:
             - inventree-dev-server
         volumes:
             # Mount local source directory to /home/inventree
-            - ./:/home/inventree:z
-        env_file:
-            - docker.dev.env
+            - ../../:/home/inventree:z
+        # No env_file needed - all vars are in Dockerfile.dev!
         restart: unless-stopped
+
