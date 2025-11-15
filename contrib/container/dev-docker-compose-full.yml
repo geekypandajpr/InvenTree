@@ -59,14 +59,14 @@ services:
             - docker.dev.env
         environment:
             # Ensure frontend can connect to backend
-            - INVENTREE_SITE_URL=http://localhost:8000
-            - INVENTREE_CORS_ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+            - INVENTREE_SITE_URL=http://103.23.239.142:8000
+            - INVENTREE_CORS_ALLOWED_ORIGINS=http://103.23.239.142:5173,http://103.23.239.142:5173
         # Override entrypoint to use init.sh from mounted volume
         entrypoint: ["/bin/bash", "/home/inventree/contrib/container/init.sh"]
         command: invoke dev.server -a 0.0.0.0:8000
         restart: unless-stopped
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:8000/api/"]
+            test: ["CMD", "curl", "-f", "http://103.23.239.142:8000/api/"]
             interval: 30s
             timeout: 10s
             retries: 3
@@ -92,15 +92,15 @@ services:
             - docker.dev.env
         environment:
             # Frontend environment variables
-            - VITE_API_URL=http://localhost:8000
-            - VITE_BASE_URL=http://localhost:5173
+            - VITE_API_URL=http://103.23.239.142:8000
+            - VITE_BASE_URL=http://103.23.239.142:5173
         # Override entrypoint for frontend - it doesn't need init.sh
         entrypoint: []
         working_dir: /home/inventree/src/frontend
         command: sh -c "yarn install && yarn run compile && yarn run dev --host 0.0.0.0 --port 5173"
         restart: unless-stopped
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://localhost:5173"]
+            test: ["CMD", "curl", "-f", "http://103.23.239.142:5173"]
             interval: 30s
             timeout: 10s
             retries: 3

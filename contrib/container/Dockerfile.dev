@@ -47,7 +47,7 @@ ENV INVENTREE_WEB_PORT=8000
 
 # Development Environment Variables (from docker.dev.env)
 # Site Configuration
-ENV INVENTREE_SITE_URL=http://localhost:8000
+ENV INVENTREE_SITE_URL=http://103.23.239.142:8000
 
 # Debug and Logging
 ENV INVENTREE_DEBUG=True
