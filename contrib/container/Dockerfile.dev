@@ -22,7 +22,7 @@ ENV INVOKE_RUN_SHELL="/bin/bash"
 ENV INVENTREE_DOCKER="true"
 
 # InvenTree paths
-ENV INVENTREE_HOME="/home/inventree"
+ENV INVENTREE_HOME="/home/sadmin/app/InvenTree"
 ENV INVENTREE_DATA_DIR="${INVENTREE_HOME}/${data_dir}"
 ENV INVENTREE_STATIC_ROOT="${INVENTREE_DATA_DIR}/static"
 ENV INVENTREE_MEDIA_ROOT="${INVENTREE_DATA_DIR}/media"
@@ -154,7 +154,7 @@ ENV PATH=/root/.local/bin:$PATH
 # Vite server (for local frontend development)
 EXPOSE 5173
 
-# The development image requires the source code to be mounted to /home/inventree/
+# The development image requires the source code to be mounted to /home/sadmin/app/InvenTree/
 # So from here, we don't actually "do" anything, apart from some file management
 
 # Location for python virtual environment
@@ -164,7 +164,7 @@ WORKDIR ${INVENTREE_HOME}
 
 # Entrypoint ensures that we are running in the python virtual environment
 # Use absolute path to init.sh to avoid issues with working directory changes
-ENTRYPOINT ["/bin/bash", "/home/inventree/init.sh"]
+ENTRYPOINT ["/bin/bash", "/home/sadmin/app/InvenTree/init.sh"]
 
 # Launch the development server
 CMD ["invoke", "dev.server", "-a", "${INVENTREE_WEB_ADDR}:${INVENTREE_WEB_PORT}"]

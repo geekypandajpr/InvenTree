@@ -46,8 +46,8 @@ services:
             # Expose web server on port 8000
             - 8000:8000
         volumes:
-            # Mount local source directory to /home/inventree
-            - ./:/home/inventree:z
+            # Mount local source directory to /home/sadmin/app/InvenTree
+            - ./:/home/sadmin/app/InvenTree:z
         env_file:
             - docker.dev.env
         restart: unless-stopped
@@ -60,8 +60,8 @@ services:
         depends_on:
             - inventree-dev-server
         volumes:
-            # Mount local source directory to /home/inventree
-            - ./:/home/inventree:z
+            # Mount local source directory to /home/sadmin/app/InvenTree
+            - ./:/home/sadmin/app/InvenTree:z
         env_file:
             - docker.dev.env
         restart: unless-stopped

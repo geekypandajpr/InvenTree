@@ -53,8 +53,8 @@ services:
             # Expose backend server on port 8000
             - 8000:8000
         volumes:
-            # Mount local source directory to /home/inventree
-            - ../../:/home/inventree:z
+            # Mount local source directory to /home/sadmin/app/InvenTree
+            - ../../:/home/sadmin/app/InvenTree:z
         env_file:
             - docker.dev.env
         environment:
@@ -62,7 +62,7 @@ services:
             - INVENTREE_SITE_URL=http://103.23.239.142:8000
             - INVENTREE_CORS_ALLOWED_ORIGINS=http://103.23.239.142:5173,http://103.23.239.142:5173
         # Override entrypoint to use init.sh from mounted volume
-        entrypoint: ["/bin/bash", "/home/inventree/contrib/container/init.sh"]
+        entrypoint: ["/bin/bash", "/home/sadmin/app/InvenTree/contrib/container/init.sh"]
         command: invoke dev.server -a 0.0.0.0:8000
         restart: unless-stopped
         healthcheck:
@@ -86,8 +86,8 @@ services:
             # Expose frontend server on port 5173
             - 5173:5173
         volumes:
-            # Mount local source directory to /home/inventree
-            - ../../:/home/inventree:z
+            # Mount local source directory to /home/sadmin/app/InvenTree
+            - ../../:/home/sadmin/app/InvenTree:z
         env_file:
             - docker.dev.env
         environment:
@@ -96,7 +96,7 @@ services:
             - VITE_BASE_URL=http://103.23.239.142:5173
         # Override entrypoint for frontend - it doesn't need init.sh
         entrypoint: []
-        working_dir: /home/inventree/src/frontend
+        working_dir: /home/sadmin/app/InvenTree/src/frontend
         command: sh -c "yarn install && yarn run compile && yarn run dev --host 0.0.0.0 --port 5173"
         restart: unless-stopped
         healthcheck:
@@ -112,12 +112,12 @@ services:
             - inventree-dev-backend
         image: inventree-dev-image
         volumes:
-            # Mount local source directory to /home/inventree
-            - ../../:/home/inventree:z
+            # Mount local source directory to /home/sadmin/app/InvenTree
+            - ../../:/home/sadmin/app/InvenTree:z
         env_file:
             - docker.dev.env
         # Override entrypoint to use init.sh from mounted volume
-        entrypoint: ["/bin/bash", "/home/inventree/contrib/container/init.sh"]
+        entrypoint: ["/bin/bash", "/home/sadmin/app/InvenTree/contrib/container/init.sh"]
         command: invoke worker
         restart: unless-stopped
 

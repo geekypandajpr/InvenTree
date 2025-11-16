@@ -25,7 +25,7 @@ ENV INVOKE_RUN_SHELL="/bin/bash"
 ENV INVENTREE_DOCKER="true"
 
 # InvenTree paths
-ENV INVENTREE_HOME="/home/inventree"
+ENV INVENTREE_HOME="/home/sadmin/app/InvenTree"
 ENV INVENTREE_DATA_DIR="${INVENTREE_HOME}/${data_dir}"
 ENV INVENTREE_STATIC_ROOT="${INVENTREE_DATA_DIR}/static"
 ENV INVENTREE_MEDIA_ROOT="${INVENTREE_DATA_DIR}/media"
@@ -158,7 +158,7 @@ ENV PATH=/root/.local/bin:$PATH
 # Vite server (for local frontend development)
 EXPOSE 5173
 
-# The development image requires the source code to be mounted to /home/inventree/
+# The development image requires the source code to be mounted to /home/sadmin/app/InvenTree/
 # So from here, we don't actually "do" anything, apart from some file management
 
 ENV INVENTREE_DEBUG=True

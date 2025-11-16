@@ -344,11 +344,11 @@ function set_env() {
   # Changing the config file
   echo "# POI13| Writing the settings to the config file ${INVENTREE_CONFIG_FILE}"
   # Media Root
-  sed -i s=#media_root:\ \'/home/inventree/data/media\'=media_root:\ \'${INVENTREE_MEDIA_ROOT}\'=g ${INVENTREE_CONFIG_FILE}
+  sed -i s=#media_root:\ \'/home/sadmin/app/InvenTree/data/media\'=media_root:\ \'${INVENTREE_MEDIA_ROOT}\'=g ${INVENTREE_CONFIG_FILE}
   # Static Root
-  sed -i s=#static_root:\ \'/home/inventree/data/static\'=static_root:\ \'${INVENTREE_STATIC_ROOT}\'=g ${INVENTREE_CONFIG_FILE}
+  sed -i s=#static_root:\ \'/home/sadmin/app/InvenTree/data/static\'=static_root:\ \'${INVENTREE_STATIC_ROOT}\'=g ${INVENTREE_CONFIG_FILE}
   # Backup dir
-  sed -i s=#backup_dir:\ \'/home/inventree/data/backup\'=backup_dir:\ \'${INVENTREE_BACKUP_DIR}\'=g ${INVENTREE_CONFIG_FILE}
+  sed -i s=#backup_dir:\ \'/home/sadmin/app/InvenTree/data/backup\'=backup_dir:\ \'${INVENTREE_BACKUP_DIR}\'=g ${INVENTREE_CONFIG_FILE}
   # Plugins enabled
   sed -i s=plugins_enabled:\ False=plugins_enabled:\ ${INVENTREE_PLUGINS_ENABLED}=g ${INVENTREE_CONFIG_FILE}
   # Plugin file
