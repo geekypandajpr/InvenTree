@@ -14,6 +14,7 @@ ARG commit_hash=""
 ARG commit_date=""
 
 ARG data_dir="data"
+ARG SERVER_IP=localhost
 
 ENV PYTHONUNBUFFERED=1
 ENV PIP_DISABLE_PIP_VERSION_CHECK=1
@@ -22,7 +23,7 @@ ENV INVOKE_RUN_SHELL="/bin/bash"
 ENV INVENTREE_DOCKER="true"
 
 # InvenTree paths
-ENV INVENTREE_HOME="/home/sadmin/app/InvenTree"
+ENV INVENTREE_HOME="/home/admin/app/InvenTree"
 ENV INVENTREE_DATA_DIR="${INVENTREE_HOME}/${data_dir}"
 ENV INVENTREE_STATIC_ROOT="${INVENTREE_DATA_DIR}/static"
 ENV INVENTREE_MEDIA_ROOT="${INVENTREE_DATA_DIR}/media"
@@ -42,12 +43,12 @@ ENV INVENTREE_GUNICORN_WORKERS="4"
 ENV INVENTREE_BACKGROUND_WORKERS="4"
 
 # Default web server address:port
-ENV INVENTREE_WEB_ADDR=0.0.0.0
+ENV INVENTREE_WEB_ADDR=${SERVER_IP}
 ENV INVENTREE_WEB_PORT=8000
 
 # Development Environment Variables (from docker.dev.env)
-# Site Configuration
-ENV INVENTREE_SITE_URL=http://103.23.239.142:8000
+# Site Configuration (default value, can be overridden by docker-compose)
+ENV INVENTREE_SITE_URL=http://${SERVER_IP}:8000
 
 # Debug and Logging
 ENV INVENTREE_DEBUG=True
@@ -164,7 +165,7 @@ WORKDIR ${INVENTREE_HOME}
 
 # Entrypoint ensures that we are running in the python virtual environment
 # Use absolute path to init.sh to avoid issues with working directory changes
-ENTRYPOINT ["/bin/bash", "/home/sadmin/app/InvenTree/init.sh"]
+ENTRYPOINT ["/bin/bash", "/home/admin/app/InvenTree/init.sh"]
 
 # Launch the development server
 CMD ["invoke", "dev.server", "-a", "${INVENTREE_WEB_ADDR}:${INVENTREE_WEB_PORT}"]

@@ -25,9 +25,9 @@ services:
             - 5432:5432
         environment:
             - PGDATA=/var/lib/postgresql/data/pgdb
-            - POSTGRES_USER=pguser
-            - POSTGRES_PASSWORD=pgpassword
-            - POSTGRES_DB=inventree
+            - POSTGRES_USER=${POSTGRES_USER}
+            - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+            - POSTGRES_DB=${POSTGRES_DB}
         volumes:
           # Map 'data' volume such that postgres database is stored externally
           - ./data:/var/lib/postgresql/data:z
@@ -46,7 +46,7 @@ services:
                 condition: service_healthy
         build:
             context: ../..
-            dockerfile: contrib/container/Dockerfile.dev
+            dockerfile: contrib/container/Dockerfile.ip.dev
             target: dev
             args:
                 SERVER_IP: ${SERVER_IP}
@@ -55,7 +55,7 @@ services:
             # Expose backend server on port 8000
             - 8000:8000
         volumes:
-            # Mount local source directory to /home/admin/app/InvenTree
+            # Mount local source directory to /home/sadmin/app/InvenTree
             - ../../:/home/admin/app/InvenTree:z
         env_file:
             - docker.dev.env
@@ -90,8 +90,8 @@ services:
             # Expose frontend server on port 5173
             - 5173:5173
         volumes:
-            # Mount local source directory to /home/admin/app/InvenTree
-            - ../../:/home/admin/app/InvenTree:z
+            # Mount local source directory to /home/sadmin/app/InvenTree
+            - ../../:/home/sadmin/app/InvenTree:z
         env_file:
             - docker.dev.env
         environment:
@@ -100,7 +100,7 @@ services:
             - VITE_BASE_URL=http://${SERVER_IP}:5173
         # Override entrypoint for frontend - it doesn't need init.sh
         entrypoint: []
-        working_dir: /home/admin/app/InvenTree/src/frontend
+        working_dir: /home/sadmin/app/InvenTree/src/frontend
         command: sh -c "yarn install && yarn run compile && yarn run dev --host 0.0.0.0 --port 5173"
         restart: unless-stopped
         healthcheck:
@@ -116,7 +116,7 @@ services:
             - inventree-dev-backend
         image: inventree-dev-image
         volumes:
-            # Mount local source directory to /home/admin/app/InvenTree
+            # Mount local source directory to /home/sadmin/app/InvenTree
             - ../../:/home/admin/app/InvenTree:z
         env_file:
             - docker.dev.env
