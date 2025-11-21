@@ -1,0 +1,171 @@
+# Custom Dockerfile for InvenTree Development Environment
+# This Dockerfile extends the base dev target and sets all environment variables
+# so you don't need to rely on external .env files
+#
+# Usage:
+#   docker build -f Dockerfile.dev -t inventree-dev-custom .
+#   Or use with docker-compose pointing to this Dockerfile
+
+FROM python:3.11-slim-trixie@sha256:1d6131b5d479888b43200645e03a78443c7157efbdb730e6b48129740727c312 AS inventree_base
+
+# Build arguments for this image
+ARG commit_tag=""
+ARG commit_hash=""
+ARG commit_date=""
+
+ARG data_dir="data"
+
+ENV PYTHONUNBUFFERED=1
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV INVOKE_RUN_SHELL="/bin/bash"
+
+ENV INVENTREE_DOCKER="true"
+
+# InvenTree paths
+ENV INVENTREE_HOME="/home/sadmin/app/InvenTree"
+ENV INVENTREE_DATA_DIR="${INVENTREE_HOME}/${data_dir}"
+ENV INVENTREE_STATIC_ROOT="${INVENTREE_DATA_DIR}/static"
+ENV INVENTREE_MEDIA_ROOT="${INVENTREE_DATA_DIR}/media"
+ENV INVENTREE_BACKUP_DIR="${INVENTREE_DATA_DIR}/backup"
+ENV INVENTREE_PLUGIN_DIR="${INVENTREE_DATA_DIR}/plugins"
+
+ENV INVENTREE_BACKEND_DIR="${INVENTREE_HOME}/src/backend"
+
+# InvenTree configuration files
+ENV INVENTREE_CONFIG_FILE="${INVENTREE_DATA_DIR}/config.yaml"
+ENV INVENTREE_SECRET_KEY_FILE="${INVENTREE_DATA_DIR}/secret_key.txt"
+ENV INVENTREE_OIDC_PRIVATE_KEY_FILE="${INVENTREE_DATA_DIR}/oidc.pem"
+ENV INVENTREE_PLUGIN_FILE="${INVENTREE_DATA_DIR}/plugins.txt"
+
+# Worker configuration
+ENV INVENTREE_GUNICORN_WORKERS="4"
+ENV INVENTREE_BACKGROUND_WORKERS="4"
+
+# Default web server address:port
+ENV INVENTREE_WEB_ADDR=0.0.0.0
+ENV INVENTREE_WEB_PORT=8000
+
+# Development Environment Variables (from docker.dev.env)
+# Site Configuration
+ENV INVENTREE_SITE_URL=http://103.23.239.142:8000
+
+# Debug and Logging
+ENV INVENTREE_DEBUG=True
+ENV INVENTREE_LOG_LEVEL=WARNING
+ENV INVENTREE_DB_LOGGING=False
+
+# Database Configuration (PostgreSQL)
+ENV INVENTREE_DB_ENGINE=postgresql
+ENV INVENTREE_DB_NAME=inventree
+ENV INVENTREE_DB_HOST=inventree-dev-db
+ENV INVENTREE_DB_PORT=5432
+ENV INVENTREE_DB_USER=pguser
+ENV INVENTREE_DB_PASSWORD=pgpassword
+
+# Plugins and Auto-update
+ENV INVENTREE_PLUGINS_ENABLED=True
+ENV INVENTREE_AUTO_UPDATE=True
+
+LABEL org.opencontainers.image.vendor="Inventory" \
+      org.opencontainers.image.title="Inventory backend server (Dev)" \
+      org.opencontainers.image.description="Inventory management system - Development" \
+      org.opencontainers.image.url="#" \
+      org.opencontainers.image.documentation="#" \
+      org.opencontainers.image.source="#" \
+      org.opencontainers.image.revision="v1.0.0" \
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.version="v1.0.0"
+
+# Install basic system level packages
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git gettext libldap2 wget curl ssh \
+    # Weasyprint requirements
+    weasyprint libpango-1.0-0 libcairo2 poppler-utils \
+    # Database client libraries
+    postgresql-client mariadb-client \
+    # font support
+    fontconfig fonts-freefont-ttf fonts-terminus fonts-noto-core fonts-noto-cjk \
+    # Cleanup
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Remove heavy python packages installed by weasyprint (that we don't need)
+RUN rm -rf /usr/lib/python3/dist-packages/numpy \
+    && rm -rf /usr/lib/python3/dist-packages/scipy \
+    && rm -rf /usr/lib/python3/dist-packages/sympy
+
+EXPOSE 8000
+EXPOSE 5173
+
+# Fix invoke command path for InvenTree environment check
+RUN python -m pip install --no-cache-dir -U invoke
+
+RUN mkdir -p ${INVENTREE_HOME}
+WORKDIR ${INVENTREE_HOME}
+
+COPY contrib/container/requirements.txt base_requirements.txt
+
+COPY tasks.py \
+     src/backend/requirements.txt \
+     contrib/container/gunicorn.conf.py \
+     contrib/container/init.sh \
+     ./
+RUN chmod +x init.sh
+
+# Entrypoint will be set in dev stage, using absolute path
+
+# Multi-stage build to compile project requirements
+FROM inventree_base AS builder_stage
+
+# Copy source files
+COPY src ${INVENTREE_HOME}/src
+COPY tasks.py ${INVENTREE_HOME}/tasks.py
+
+# Install backend build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    pkg-config build-essential \
+    libldap2-dev libsasl2-dev libssl-dev \
+    libmariadb-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Build and install python dependencies
+RUN pip install --user --require-hashes -r base_requirements.txt --no-cache-dir && \
+    pip install --user --require-hashes -r requirements.txt --no-cache-dir && \
+    pip cache purge && \
+    rm -rf /root/.cache/pip
+
+# Install frontend build dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nodejs npm \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN npm install -g n yarn --ignore-scripts && \
+    yarn config set network-timeout 600000 -g
+RUN bash -c "n lts"
+RUN cd "${INVENTREE_HOME}" && invoke int.frontend-compile --extract
+
+# Development image with all env vars set
+FROM builder_stage AS dev
+
+ENV PATH=/root/.local/bin:$PATH
+
+# Vite server (for local frontend development)
+EXPOSE 5173
+
+# The development image requires the source code to be mounted to /home/sadmin/app/InvenTree/
+# So from here, we don't actually "do" anything, apart from some file management
+
+# Location for python virtual environment
+ENV INVENTREE_PY_ENV="${INVENTREE_DATA_DIR}/env"
+
+WORKDIR ${INVENTREE_HOME}
+
+# Entrypoint ensures that we are running in the python virtual environment
+# Use absolute path to init.sh to avoid issues with working directory changes
+ENTRYPOINT ["/bin/bash", "/home/sadmin/app/InvenTree/init.sh"]
+
+# Launch the development server
+CMD ["invoke", "dev.server", "-a", "${INVENTREE_WEB_ADDR}:${INVENTREE_WEB_PORT}"]
+

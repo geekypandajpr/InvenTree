@@ -25,7 +25,7 @@ ENV INVOKE_RUN_SHELL="/bin/bash"
 ENV INVENTREE_DOCKER="true"
 
 # InvenTree paths
-ENV INVENTREE_HOME="/home/inventree"
+ENV INVENTREE_HOME="/home/sadmin/app/InvenTree"
 ENV INVENTREE_DATA_DIR="${INVENTREE_HOME}/${data_dir}"
 ENV INVENTREE_STATIC_ROOT="${INVENTREE_DATA_DIR}/static"
 ENV INVENTREE_MEDIA_ROOT="${INVENTREE_DATA_DIR}/media"
@@ -48,15 +48,15 @@ ENV INVENTREE_BACKGROUND_WORKERS="4"
 ENV INVENTREE_WEB_ADDR=0.0.0.0
 ENV INVENTREE_WEB_PORT=8000
 
-LABEL org.opencontainers.image.vendor="inventree" \
-      org.opencontainers.image.title="InvenTree backend server" \
-      org.opencontainers.image.description="InvenTree is the open-source inventory management system" \
-      org.opencontainers.image.url="https://inventree.org" \
-      org.opencontainers.image.documentation="https://docs.inventree.org" \
-      org.opencontainers.image.source="https://github.com/inventree/InvenTree" \
-      org.opencontainers.image.revision=${commit_hash} \
+LABEL org.opencontainers.image.vendor="Inventory" \
+      org.opencontainers.image.title="Inventory backend server" \
+      org.opencontainers.image.description="Inventory management system" \
+      org.opencontainers.image.url="#" \
+      org.opencontainers.image.documentation="#" \
+      org.opencontainers.image.source="#" \
+      org.opencontainers.image.revision="v1.0.0" \
       org.opencontainers.image.licenses="MIT" \
-      org.opencontainers.image.version=${commit_tag}
+      org.opencontainers.image.version="v1.0.0"
 
 # Install basic system level packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -158,7 +158,7 @@ ENV PATH=/root/.local/bin:$PATH
 # Vite server (for local frontend development)
 EXPOSE 5173
 
-# The development image requires the source code to be mounted to /home/inventree/
+# The development image requires the source code to be mounted to /home/sadmin/app/InvenTree/
 # So from here, we don't actually "do" anything, apart from some file management
 
 ENV INVENTREE_DEBUG=True
@@ -170,7 +170,7 @@ ENV INVENTREE_PY_ENV="${INVENTREE_DATA_DIR}/env"
 WORKDIR ${INVENTREE_HOME}
 
 # Entrypoint ensures that we are running in the python virtual environment
-ENTRYPOINT ["/bin/bash", "./contrib/container/init.sh"]
+ENTRYPOINT ["/bin/bash", "./init.sh"]
 
 # Launch the development server
 CMD ["invoke", "dev.server", "-a", "${INVENTREE_WEB_ADDR}:${INVENTREE_WEB_PORT}"]
