@@ -266,6 +266,9 @@ The following database options can be configured:
 | INVENTREE_DB_HOST | database.HOST | Database host address (if required) | *Not specified* |
 | INVENTREE_DB_PORT | database.PORT | Database host port (if required) | *Not specified* |
 
+!!! tip "Database Password"
+    The value specified for `INVENTREE_DB_PASSWORD` should not contain comma `,` or colon `:` characters, otherwise the connection to the database may fail.
+
 ### PostgreSQL Settings
 
 If running with a PostgreSQL database backend, the following additional options are available:
@@ -318,6 +321,9 @@ The following cache settings are available:
 | INVENTREE_CACHE_KEEPALIVE_INTERVAL | cache.keepalive_interval | Cache keepalive interval | 1 |
 | INVENTREE_CACHE_USER_TIMEOUT | cache.user_timeout | Cache user timeout | 1000 |
 
+!!! tip "Cache Password"
+    The value specified for `INVENTREE_CACHE_PASSWORD` should not contain comma `,` or colon `:` characters, otherwise the connection to the cache server may fail.
+
 ## Email Settings
 
 To enable [email functionality](../settings/email.md), email settings must be configured here, either via environment variables or within the configuration file.
@@ -335,6 +341,10 @@ The following email settings are available:
 | INVENTREE_EMAIL_SSL | email.ssl | Enable SSL support | False |
 | INVENTREE_EMAIL_SENDER | email.sender | Sending email address | *Not specified* |
 | INVENTREE_EMAIL_PREFIX | email.prefix | Prefix for subject text | [InvenTree] |
+
+### Email Backend
+
+The default email implementation uses the Django STMP backend. This should be sufficient for most implementations, although other backends can be used if required. Note that selection of a different backend requires must use fully qualified module path, and requires advanced knowledge.
 
 ### Sender Email
 
@@ -482,7 +492,7 @@ The INVENTREE_CUSTOMIZE environment variable must contain a json object with the
 the wanted values. Example:
 
 ```
-INVENTREE_CUSTOMIZE={"login_message":"Hallo Michi"}
+INVENTREE_CUSTOMIZE={"login_message":"Hello World"}
 ```
 
 This example sets a login message. Take care of the double quotes.
