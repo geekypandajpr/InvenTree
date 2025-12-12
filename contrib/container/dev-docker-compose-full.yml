@@ -13,6 +13,12 @@
 #   - Backend API: http://localhost:8000
 #   - Frontend UI: http://localhost:5173
 #   - Admin Panel: http://localhost:8000/admin
+#
+# Environment Variables:
+#   This file uses environment variables from .env file for:
+#   - Database configuration (POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB)
+#   - Volume paths (INVENTREE_DATA_VOLUME, INVENTREE_HOME)
+#   Create a .env file in this directory with the required variables.
 
 services:
 
@@ -20,20 +26,20 @@ services:
     inventree-dev-db:
         image: postgres:17
         expose:
-            - 5432/tcp
+            - ${INVENTREE_DB_PORT:-5432}/tcp
         ports:
-            - 5432:5432
+            - ${INVENTREE_DB_PORT:-5432}:${INVENTREE_DB_PORT:-5432}
         environment:
             - PGDATA=/var/lib/postgresql/data/pgdb
-            - POSTGRES_USER=pguser
-            - POSTGRES_PASSWORD=pgpassword
-            - POSTGRES_DB=inventree
+            - POSTGRES_USER=${INVENTREE_DB_USER:-pguser}
+            - POSTGRES_PASSWORD=${INVENTREE_DB_PASSWORD:-pgpassword}
+            - POSTGRES_DB=${INVENTREE_DB_NAME:-inventree}
         volumes:
           # Map 'data' volume such that postgres database is stored externally
-          - ./data:/var/lib/postgresql/data:z
+          - ${INVENTREE_DATA_VOLUME:-../../dev-db}:/var/lib/postgresql/data:z
         restart: unless-stopped
         healthcheck:
-            test: ["CMD-SHELL", "pg_isready -U pguser -d inventree"]
+            test: ["CMD-SHELL", "pg_isready -U ${INVENTREE_DB_USER:-pguser} -d ${INVENTREE_DB_NAME:-inventree}"]
             interval: 10s
             timeout: 5s
             retries: 5
@@ -53,20 +59,21 @@ services:
             # Expose backend server on port 8000
             - 8000:8000
         volumes:
-            # Mount local source directory to /home/sadmin/app/InvenTree
-            - ../../:/home/sadmin/app/InvenTree:z
+            # Mount local source directory to INVENTREE_HOME
+            - ../../:${INVENTREE_HOME:-../../}:z
         env_file:
-            - docker.dev.env
+            - .env
         environment:
             # Ensure frontend can connect to backend
-            - INVENTREE_SITE_URL=http://103.23.239.142:8000
-            - INVENTREE_CORS_ALLOWED_ORIGINS=http://103.23.239.142:5173,http://103.23.239.142:5173
+            - INVENTREE_SITE_URL=${INVENTREE_SITE_URL}
+            - INVENTREE_CORS_ALLOWED_ORIGINS=${INVENTREE_CORS_ALLOWED_ORIGINS}
+            - INVENTREE_HOME=${INVENTREE_HOME:-../../}
         # Override entrypoint to use init.sh from mounted volume
-        entrypoint: ["/bin/bash", "/home/sadmin/app/InvenTree/contrib/container/init.sh"]
+        entrypoint: ["/bin/bash", "${INVENTREE_HOME:-../../}/contrib/container/init.sh"]
         command: invoke dev.server -a 0.0.0.0:8000
         restart: unless-stopped
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://103.23.239.142:8000/api/"]
+            test: ["CMD", "curl", "-f", "${INVENTREE_SITE_URL}/api/"]
             interval: 30s
             timeout: 10s
             retries: 3
@@ -86,21 +93,25 @@ services:
             # Expose frontend server on port 5173
             - 5173:5173
         volumes:
-            # Mount local source directory to /home/sadmin/app/InvenTree
-            - ../../:/home/sadmin/app/InvenTree:z
+            # Mount local source directory to INVENTREE_HOME
+            - ../../:${INVENTREE_HOME:-../../}:z
         env_file:
             - docker.dev.env
+            - .env
         environment:
             # Frontend environment variables
-            - VITE_API_URL=http://103.23.239.142:8000
-            - VITE_BASE_URL=http://103.23.239.142:5173
+            - VITE_API_URL=${INVENTREE_SITE_URL}
+            - VITE_BASE_URL=${INVENTREE_FRONTEND_URL}
+            # - VITE_API_URL=${INVENTREE_SITE_URL:-http://103.23.239.142:8000}
+            # - VITE_BASE_URL=${INVENTREE_FRONTEND_URL:-http://103.23.239.142:5173}
+            - INVENTREE_HOME=${INVENTREE_HOME:-../../}
         # Override entrypoint for frontend - it doesn't need init.sh
         entrypoint: []
-        working_dir: /home/sadmin/app/InvenTree/src/frontend
+        working_dir: ${INVENTREE_HOME:-../../}/src/frontend
         command: sh -c "yarn install && yarn run compile && yarn run dev --host 0.0.0.0 --port 5173"
         restart: unless-stopped
         healthcheck:
-            test: ["CMD", "curl", "-f", "http://103.23.239.142:5173"]
+            test: ["CMD", "curl", "-f", "${INVENTREE_FRONTEND_URL}"]
             interval: 30s
             timeout: 10s
             retries: 3
@@ -112,12 +123,15 @@ services:
             - inventree-dev-backend
         image: inventree-dev-image
         volumes:
-            # Mount local source directory to /home/sadmin/app/InvenTree
-            - ../../:/home/sadmin/app/InvenTree:z
+            # Mount local source directory to INVENTREE_HOME
+            - ../../:${INVENTREE_HOME:-../../}:z
         env_file:
             - docker.dev.env
+            - .env
+        environment:
+            - INVENTREE_HOME=${INVENTREE_HOME:-../../}
         # Override entrypoint to use init.sh from mounted volume
-        entrypoint: ["/bin/bash", "/home/sadmin/app/InvenTree/contrib/container/init.sh"]
+        entrypoint: ["/bin/bash", "${INVENTREE_HOME:-../../}/contrib/container/init.sh"]
         command: invoke worker
         restart: unless-stopped
 

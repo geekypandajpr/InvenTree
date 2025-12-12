@@ -15,7 +15,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
 # Default env file
-DEFAULT_ENV_FILE="docker.dev.env"
+DEFAULT_ENV_FILE=".env"
 ENV_FILE="${1:-$DEFAULT_ENV_FILE}"
 
 # Resolve env file path
