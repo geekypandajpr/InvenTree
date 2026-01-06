@@ -202,7 +202,7 @@ function DrawerContent({ closeFunc }: Readonly<{ closeFunc?: () => void }>) {
           <></>
         )}
       </Container>
-      <div ref={ref}>
+      {/* <div ref={ref}>
         <Space h='md' />
         <MenuLinks
           title={t`Documentation`}
@@ -215,7 +215,7 @@ function DrawerContent({ closeFunc }: Readonly<{ closeFunc?: () => void }>) {
           links={menuItemsAbout}
           beforeClick={closeFunc}
         />
-      </div>
+      </div> */}
     </Flex>
   );
 }

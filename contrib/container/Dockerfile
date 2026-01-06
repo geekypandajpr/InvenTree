@@ -59,7 +59,8 @@ LABEL org.opencontainers.image.vendor="inventree" \
       org.opencontainers.image.version=${commit_tag}
 
 # Install basic system level packages
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN echo "[Dockerfile] Installing basic system packages..." && \
+    apt-get update && apt-get install -y --no-install-recommends \
     git gettext libldap2 wget curl ssh \
     # Weasyprint requirements : https://doc.courtbouillon.org/weasyprint/stable/first_steps.html#alpine-3-12
     weasyprint libpango-1.0-0 libcairo2 poppler-utils \
@@ -69,68 +70,96 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     fontconfig fonts-freefont-ttf fonts-terminus fonts-noto-core fonts-noto-cjk \
     # Cleanup
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* && \
+    echo "[Dockerfile] System packages installed successfully"
 
 # Remove heavy python packages installed by weasyprint (that we don't need)
-RUN rm -rf /usr/lib/python3/dist-packages/numpy \
+RUN echo "[Dockerfile] Removing unnecessary python packages..." && \
+    rm -rf /usr/lib/python3/dist-packages/numpy \
     && rm -rf /usr/lib/python3/dist-packages/scipy \
-    && rm -rf /usr/lib/python3/dist-packages/sympy
+    && rm -rf /usr/lib/python3/dist-packages/sympy && \
+    echo "[Dockerfile] Cleanup complete"
 
 EXPOSE 8000
 
 # Fix invoke command path for InvenTree environment check
-RUN python -m pip install --no-cache-dir -U invoke
+RUN echo "[Dockerfile] Installing invoke..." && \
+    python -m pip install --no-cache-dir -U invoke && \
+    echo "[Dockerfile] Invoke installed successfully"
 
 RUN mkdir -p ${INVENTREE_HOME}
 WORKDIR ${INVENTREE_HOME}
 
+RUN echo "[Dockerfile] Copying requirements.txt..."
 COPY contrib/container/requirements.txt base_requirements.txt
 
+RUN echo "[Dockerfile] Copying tasks.py and other files..."
 COPY tasks.py \
      src/backend/requirements.txt \
      contrib/container/gunicorn.conf.py \
      contrib/container/init.sh \
      ./
 RUN chmod +x init.sh
+RUN echo "[Dockerfile] Base stage setup complete"
 
 ENTRYPOINT ["/bin/bash", "./init.sh"]
 
 # Multi-stage build to compile project requirements
 FROM inventree_base AS builder_stage
 
+RUN echo "[Dockerfile] Starting builder stage..."
+
 # Copy source files
+RUN echo "[Dockerfile] Copying source files..."
 COPY src ${INVENTREE_HOME}/src
-COPY tasks.py ${INVENTREE_HOME}/tasks.py
+# Note: tasks.py is already copied in the base stage, so we don't need to copy it again
 
 # Install backend build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN echo "[Dockerfile] Installing backend build dependencies..." && \
+    apt-get update && apt-get install -y --no-install-recommends \
     pkg-config build-essential \
     libldap2-dev libsasl2-dev libssl-dev \
     libmariadb-dev \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* && \
+    echo "[Dockerfile] Build dependencies installed"
 
 # Build and install python dependencies
-RUN pip install --user --require-hashes -r base_requirements.txt --no-cache-dir && \
+RUN echo "[Dockerfile] Installing Python dependencies..." && \
+    echo "[Dockerfile] Installing base requirements..." && \
+    pip install --user --require-hashes -r base_requirements.txt --no-cache-dir && \
+    echo "[Dockerfile] Installing backend requirements..." && \
     pip install --user --require-hashes -r requirements.txt --no-cache-dir && \
+    echo "[Dockerfile] Cleaning pip cache..." && \
     pip cache purge && \
-    rm -rf /root/.cache/pip
+    rm -rf /root/.cache/pip && \
+    echo "[Dockerfile] Python dependencies installed successfully"
 
 # Install frontend build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN echo "[Dockerfile] Installing frontend build dependencies..." && \
+    apt-get update && apt-get install -y --no-install-recommends \
     nodejs npm \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* && \
+    echo "[Dockerfile] Node.js and npm installed"
 
-RUN npm install -g n yarn --ignore-scripts && \
-    yarn config set network-timeout 600000 -g
-RUN bash -c "n lts"
-RUN cd "${INVENTREE_HOME}" && invoke int.frontend-compile --extract
+RUN echo "[Dockerfile] Installing n and yarn..." && \
+    npm install -g n yarn --ignore-scripts && \
+    yarn config set network-timeout 600000 -g && \
+    echo "[Dockerfile] n and yarn installed"
+RUN echo "[Dockerfile] Installing Node.js LTS..." && \
+    bash -c "n lts" && \
+    echo "[Dockerfile] Node.js LTS installed"
+RUN echo "[Dockerfile] Compiling frontend..." && \
+    cd "${INVENTREE_HOME}" && invoke int.frontend-compile --extract && \
+    echo "[Dockerfile] Frontend compilation complete"
 
 # InvenTree production image:
 # - Copies required files from local directory
 # - Starts a gunicorn webserver
 FROM inventree_base AS production
+
+RUN echo "[Dockerfile] Building production image..."
 
 ENV INVENTREE_DEBUG=False
 
@@ -139,19 +168,24 @@ ENV INVENTREE_COMMIT_HASH="${commit_hash}"
 ENV INVENTREE_COMMIT_DATE="${commit_date}"
 
 # Copy source code
+RUN echo "[Dockerfile] Copying backend source code..."
 COPY src/backend/InvenTree ${INVENTREE_BACKEND_DIR}/InvenTree
 COPY src/backend/requirements.txt ${INVENTREE_BACKEND_DIR}/requirements.txt
 
 # Copy compiled dependencies from prebuild image
 ENV PATH=/root/.local/bin:$PATH
 
+RUN echo "[Dockerfile] Copying compiled frontend and dependencies from builder stage..."
 COPY --from=builder_stage ${INVENTREE_BACKEND_DIR}/InvenTree/web/static/web ${INVENTREE_BACKEND_DIR}/InvenTree/web/static/web
 COPY --from=builder_stage /root/.local /root/.local
+RUN echo "[Dockerfile] Production image build complete"
 
 # Launch the production server
-CMD ["sh", "-c", "exec gunicorn -c ./gunicorn.conf.py InvenTree.wsgi -b 0.0.0.0:8000 --chdir ${INVENTREE_BACKEND_DIR}/InvenTree"]
+CMD ["sh", "-c", "exec gunicorn -c ./gunicorn.conf.py InvenTree.wsgi -b ${INVENTREE_WEB_ADDR}:${INVENTREE_WEB_PORT} --chdir ${INVENTREE_BACKEND_DIR}/InvenTree"]
 
 FROM builder_stage AS dev
+
+RUN echo "[Dockerfile] Building development image..."
 
 ENV PATH=/root/.local/bin:$PATH
 
@@ -169,8 +203,12 @@ ENV INVENTREE_PY_ENV="${INVENTREE_DATA_DIR}/env"
 
 WORKDIR ${INVENTREE_HOME}
 
+RUN echo "[Dockerfile] Development image setup complete"
+
 # Entrypoint ensures that we are running in the python virtual environment
-ENTRYPOINT ["/bin/bash", "./contrib/container/init.sh"]
+# In dev stage, volumes are mounted so init.sh from local filesystem is at ./contrib/container/init.sh
+# Fallback to ./init.sh if volume mount doesn't have the file structure
+ENTRYPOINT ["/bin/bash", "-c", "if [ -f ./contrib/container/init.sh ]; then exec ./contrib/container/init.sh \"$@\"; elif [ -f ./init.sh ]; then exec ./init.sh \"$@\"; else echo 'Error: init.sh not found'; exit 1; fi", "--"]
 
 # Launch the development server
 CMD ["invoke", "dev.server", "-a", "${INVENTREE_WEB_ADDR}:${INVENTREE_WEB_PORT}"]

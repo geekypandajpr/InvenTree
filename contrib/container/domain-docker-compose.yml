@@ -1,0 +1,99 @@
+# Docker compose recipe for InvenTree with domain name
+# - Runs PostgreSQL as the database backend
+# - Uses built-in django webserver (recommended to use gunicorn + nginx/caddy for production)
+# - Runs the InvenTree background worker process
+# - Runs the Vite frontend development server
+# - Serves media and static content directly from Django webserver
+
+# IMPORTANT NOTE:
+# Before running, update DOMAIN_NAME in docker.domain.env with your actual domain name
+# For production, consider using a reverse proxy (nginx/caddy) in front of this setup
+
+services:
+
+    # Database service
+    # Use PostgreSQL as the database backend
+    inventree-domain-db:
+        image: postgres:17
+        container_name: inventree-domain-db
+        ports:
+            # Expose PostgreSQL database on port 5432 for external access
+            - 5432:5432
+        environment:
+            - PGDATA=/var/lib/postgresql/data/pgdb
+            - POSTGRES_USER=pguser
+            - POSTGRES_PASSWORD=pgpassword
+            - POSTGRES_DB=inventree
+        volumes:
+          # Map 'data' volume such that postgres database is stored externally
+          - ./data-domain:/var/lib/postgresql/data:z
+        restart: unless-stopped
+        networks:
+            - inventree-domain-network
+
+    # InvenTree web server service
+    # Runs the django built-in webserver application
+    inventree-domain-server:
+        container_name: inventree-domain-server
+        depends_on:
+          - inventree-domain-db
+        build: &build_config
+            context: ../..
+            dockerfile: contrib/container/Dockerfile
+            target: dev
+        image: inventree-domain-image
+        ports:
+            # Expose web server on port 8000
+            - 8000:8000
+        volumes:
+            # Mount local source directory to /home/inventree
+            - ../../:/home/inventree:z
+        env_file:
+            - docker.domain.env
+        restart: unless-stopped
+        networks:
+            - inventree-domain-network
+
+    # Background worker process handles long-running or periodic tasks
+    inventree-domain-worker:
+        container_name: inventree-domain-worker
+        image: inventree-domain-image
+        build: *build_config
+        command: invoke worker
+        depends_on:
+            - inventree-domain-server
+        volumes:
+            # Mount local source directory to /home/inventree
+            - ../../:/home/inventree:z
+        env_file:
+            - docker.domain.env
+        restart: unless-stopped
+        networks:
+            - inventree-domain-network
+
+    # Frontend development server
+    # Runs the Vite development server
+    inventree-domain-frontend:
+        container_name: inventree-domain-frontend
+        image: inventree-domain-image
+        build: *build_config
+        working_dir: /home/inventree
+        command: sh -c "cd src/frontend && yarn install && yarn run compile && yarn run dev --host"
+        depends_on:
+            - inventree-domain-server
+        ports:
+            # Expose frontend dev server on port 5173
+            - 5173:5173
+        volumes:
+            # Mount local source directory to /home/inventree
+            - ../../:/home/inventree:z
+        env_file:
+            - docker.domain.env
+        restart: unless-stopped
+        networks:
+            - inventree-domain-network
+
+networks:
+    inventree-domain-network:
+        driver: bridge
+

@@ -2,6 +2,7 @@
 # - Runs PostgreSQL as the database backend
 # - Uses built-in django webserver
 # - Runs the InvenTree background worker process
+# - Runs the Vite frontend development server with hot-reloading
 # - Serves media and static content directly from Django webserver
 
 # IMPORTANT NOTE:
@@ -19,8 +20,9 @@ services:
     # Note: This can be changed to a different backend if required
     inventree-dev-db:
         image: postgres:17
-        expose:
-            - 5432/tcp
+        ports:
+            # Expose PostgreSQL database on port 5432 for external access
+            - 5432:5432
         environment:
             - PGDATA=/var/lib/postgresql/data/pgdb
             - POSTGRES_USER=pguser
@@ -37,7 +39,7 @@ services:
         depends_on:
           - inventree-dev-db
         build: &build_config
-            context: .
+            context: ../..
             dockerfile: contrib/container/Dockerfile
             target: dev
         # Cache the built image to be used by the inventree-dev-worker process
@@ -47,10 +49,10 @@ services:
             - 8000:8000
         volumes:
             # Mount local source directory to /home/inventree
-            - ./:/home/inventree:z
+            # Path is relative to where docker-compose is run from (project root via run-dev.sh)
+            - ../../:/home/inventree:z
         env_file:
-            - contrib/container/docker.dev.env
-        restart: unless-stopped
+            - docker.local.env
 
     # Background worker process handles long-running or periodic tasks
     inventree-dev-worker:
@@ -61,7 +63,28 @@ services:
             - inventree-dev-server
         volumes:
             # Mount local source directory to /home/inventree
-            - ./:/home/inventree:z
+            # Path is relative to where docker-compose is run from (project root via run-dev.sh)
+            - ../../:/home/inventree:z
         env_file:
-            - contrib/container/docker.dev.env
+            - docker.local.env
+        restart: unless-stopped
+
+    # Frontend development server
+    # Runs the Vite development server for hot-reloading frontend changes
+    inventree-dev-frontend:
+        image: inventree-dev-image
+        build: *build_config
+        working_dir: /home/inventree
+        command: sh -c "cd src/frontend && yarn install && yarn run compile && yarn run dev --host"
+        depends_on:
+            - inventree-dev-server
+        ports:
+            # Expose frontend dev server on port 5173
+            - 5173:5173
+        volumes:
+            # Mount local source directory to /home/inventree
+            # Path is relative to where docker-compose is run from (project root via run-dev.sh)
+            - ../../:/home/inventree:z
+        env_file:
+            - docker.local.env
         restart: unless-stopped

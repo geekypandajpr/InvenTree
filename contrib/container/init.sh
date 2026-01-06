@@ -1,4 +1,4 @@
-#!/bin/ash
+#!/bin/bash
 
 # exit when any command fails
 set -e
@@ -28,8 +28,33 @@ fi
 if test -f "$INVENTREE_CONFIG_FILE"; then
     echo "Loading config file : $INVENTREE_CONFIG_FILE"
 else
-    echo "Copying config file from $INVENTREE_BACKEND_DIR/InvenTree/config_template.yml to $INVENTREE_CONFIG_FILE"
-    cp $INVENTREE_BACKEND_DIR/InvenTree/config_template.yaml $INVENTREE_CONFIG_FILE
+    # Wait a moment for volume mounts to be fully available (if using volumes)
+    sleep 1
+    
+    # Try multiple possible locations for the config template
+    CONFIG_TEMPLATE_PATHS=(
+        "$INVENTREE_BACKEND_DIR/InvenTree/config_template.yaml"
+        "${INVENTREE_HOME}/src/backend/InvenTree/config_template.yaml"
+    )
+    
+    CONFIG_TEMPLATE=""
+    for path in "${CONFIG_TEMPLATE_PATHS[@]}"; do
+        if test -f "$path"; then
+            CONFIG_TEMPLATE="$path"
+            break
+        fi
+    done
+    
+    if [ -n "$CONFIG_TEMPLATE" ] && test -f "$CONFIG_TEMPLATE"; then
+        echo "Copying config file from $CONFIG_TEMPLATE to $INVENTREE_CONFIG_FILE"
+        # Ensure the config directory exists
+        mkdir -p "$(dirname "$INVENTREE_CONFIG_FILE")"
+        cp "$CONFIG_TEMPLATE" "$INVENTREE_CONFIG_FILE"
+        echo "Config file created successfully at $INVENTREE_CONFIG_FILE"
+    else
+        # Don't fail - Python code will create the config file automatically if needed
+        echo "Info: Config template not found. InvenTree will create config.yaml automatically on first run."
+    fi
 fi
 
 # Setup a python virtual environment
