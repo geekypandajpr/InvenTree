@@ -71,6 +71,33 @@ fi
 # Extract static IP from env file
 STATIC_IP=$(grep "^STATIC_IP_ADDRESS=" "$ENV_FILE" | cut -d '=' -f2 | tr -d '"' | tr -d "'" || echo "192.168.1.100")
 
+# Process env file to substitute ${STATIC_IP_ADDRESS} variable references
+# Create a temporary processed env file
+PROCESSED_ENV_FILE="$SCRIPT_DIR/docker.static-ip.env.processed"
+# Escape dots for regex substitution
+STATIC_IP_ESCAPED=$(echo "$STATIC_IP" | sed 's/\./\\./g')
+
+# Process the env file: substitute ${STATIC_IP_ADDRESS} and ${STATIC_IP_ADDRESS_ESCAPED} with actual IP
+# Handle the special regex case where dots need to be escaped
+sed -e "s|\${STATIC_IP_ADDRESS}|${STATIC_IP}|g" \
+    -e "s|\${STATIC_IP_ADDRESS_ESCAPED}|${STATIC_IP_ESCAPED}|g" \
+    "$ENV_FILE" > "$PROCESSED_ENV_FILE"
+
+# Temporarily backup and replace the env file with processed version
+cp "$ENV_FILE" "$ENV_FILE.backup"
+cp "$PROCESSED_ENV_FILE" "$ENV_FILE"
+
+# Function to restore original env file
+restore_env_file() {
+    if [ -f "$ENV_FILE.backup" ]; then
+        mv "$ENV_FILE.backup" "$ENV_FILE"
+    fi
+    rm -f "$PROCESSED_ENV_FILE"
+}
+
+# Ensure cleanup on exit
+trap "restore_env_file" EXIT INT TERM
+
 echo -e "${GREEN}Starting InvenTree with static IP: ${STATIC_IP}${NC}"
 echo ""
 echo "Services:"
@@ -84,6 +111,9 @@ echo ""
 
 # Build and start services
 $COMPOSE_CMD -f "$SCRIPT_DIR/static-ip-docker-compose.yml" up --build -d
+
+# Restore original env file immediately after docker-compose reads it
+restore_env_file
 
 echo ""
 echo -e "${GREEN}Services started successfully!${NC}"
